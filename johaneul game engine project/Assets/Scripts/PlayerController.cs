@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -9,12 +10,14 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer;
 
     private Rigidbody2D rb;
+    private Animator pAni;
     private bool isGrounded;
     private float moveInput;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        pAni = GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -22,7 +25,14 @@ public class PlayerController : MonoBehaviour
     {
         rb.linearVelocity = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
 
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+        if (moveInput < 0)
+            transform.localScale = new Vector3(-1, 1, 1);
+        else if (moveInput > 0)
+            transform.localScale = new Vector3(1, 1, 1);
+
+
+            isGrounded = Physics2D.OverlapCircle(groundCheck.position, 2f, groundLayer);
+
     }
 
     public void OnMove(InputValue value)
@@ -31,12 +41,32 @@ public class PlayerController : MonoBehaviour
         moveInput = input.x;
     }
 
-    public void Onjump(InputValue value)
+    public void OnJump(InputValue value)
     {
         if (value.isPressed && isGrounded)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            pAni.SetTrigger("Jump");
         }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.CompareTag("Respawn"))
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        if(collision.CompareTag("Finish"))
+        {
+            collision.GetComponent<LevelObject>().MoveToNextLevel();
+        }
+
+        if (collision.CompareTag("Enemy"))
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
     }
 }
